@@ -2,7 +2,6 @@
 main.c
 */
 
-#define F_CPU 16000000
 
 #include <avr/io.h>
 #include <string.h>

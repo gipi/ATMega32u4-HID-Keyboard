@@ -3,7 +3,6 @@ usb.c
 USB Controller initialization, device setup, and HID interrupt routines
 */
 
-#define F_CPU 16000000
 #include "usb.h"
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
