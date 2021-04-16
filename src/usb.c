@@ -324,7 +324,7 @@ ISR(USB_COM_vect) {
                         // the packet because it also clears the endpoint banks
     if (bRequest == GET_DESCRIPTOR) {
       // The Host is requesting a descriptor to enumerate the device
-      uint8_t* descriptor;
+      const uint8_t* descriptor;
       uint8_t descriptor_length;
 
       if (wValue == 0x0100) {  // Is the host requesting a device descriptor?
