@@ -115,10 +115,19 @@
 #define KEY_F11 0x44  // Keyboard F11
 #define KEY_F12 0x45  // Keyboard F12
 
-#define KEY_102ND 0x64    // Keyboard Non-US \ and |
-#define KEY_COMPOSE 0x65  // Keyboard Application
-#define KEY_POWER 0x66    // Keyboard Power
-#define KEY_KPEQUAL 0x67  // Keypad =
+#define KEY_SYSRQ      0x46 // Keyboard Print Screen
+#define KEY_SCROLLLOCK 0x47 // Keyboard Scroll Lock
+#define KEY_PAUSE      0x48 // Keyboard Pause
+#define KEY_INSERT     0x49 // Keyboard Insert
+#define KEY_HOME       0x4a // Keyboard Home
+#define KEY_PAGEUP     0x4b // Keyboard Page Up
+#define KEY_DELETE     0x4c // Keyboard Delete Forward
+#define KEY_END        0x4d // Keyboard End
+#define KEY_PAGEDOWN   0x4e // Keyboard Page Down
+#define KEY_102ND      0x64 // Keyboard Non-US \ and |
+#define KEY_COMPOSE    0x65 // Keyboard Application
+#define KEY_POWER      0x66 // Keyboard Power
+#define KEY_KPEQUAL    0x67 // Keypad =
 
 #define KEY_F13 0x68  // Keyboard F13
 #define KEY_F14 0x69  // Keyboard F14
