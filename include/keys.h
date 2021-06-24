@@ -1,5 +1,11 @@
 #ifndef KEYS_H
 #define KEYS_H
+/*
+ * USB HID Keyboard scan codes as per USB spec 1.11
+ *
+ * see also
+ * <https://github.com/qmk/qmk_firmware/blob/master/quantum/keymap_extras/keymap_italian.h>
+ */
 
 // These are custom layer shift keys, they don't actually cause a keypress to be
 // sent
@@ -82,15 +88,21 @@
 #define KEY_ESC 0x29         // Keyboard ESCAPE
 #define KEY_BACKSPACE 0x2a   // Keyboard DELETE (Backspace)
 #define KEY_TAB 0x2b         // Keyboard Tab
-#define KEY_SPACE 0x2c       // Keyboard Spacebar
+#define KEY_SPACEBAR 0x2c       // Keyboard Spacebar
 #define KEY_MINUS 0x2d       // Keyboard - and _
 #define KEY_EQUAL 0x2e       // Keyboard = and +
+#define KEY_IT_PLUS 0x2e
+#define KEY_IT_IGRAVE  KEY_EQUAL  // ì
 #define KEY_LEFTBRACE 0x2f   // Keyboard [ and {
+#define KEY_IT_EGRAVE 0x27
 #define KEY_RIGHTBRACE 0x30  // Keyboard ] and }
 #define KEY_BACKSLASH 0x31   // Keyboard \ and |
 #define KEY_HASHTILDE 0x32   // Keyboard Non-US # and ~
+#define KEY_IT_UGRAVE 0x32
 #define KEY_SEMICOLON 0x33   // Keyboard ; and :
+#define KEY_IT_OGRAVE KEY_SEMICOLON
 #define KEY_APOSTROPHE 0x34  // Keyboard ' and "
+#define KEY_IT_AGRAVE KEY_APOSTROPHE
 #define KEY_GRAVE 0x35       // Keyboard ` and ~
 #define KEY_COMMA 0x36       // Keyboard , and <
 #define KEY_DOT 0x37         // Keyboard . and >
@@ -101,6 +113,9 @@
 #define KEY_LEFT 0x50   // Keyboard Left Arrow
 #define KEY_DOWN 0x51   // Keyboard Down Arrow
 #define KEY_UP 0x52     // Keyboard Up Arrow
+
+#define KEY_MOD_WINDOWS 0x5b
+#define KEY_BOH 0x5b
 
 #define KEY_F1 0x3a   // Keyboard F1
 #define KEY_F2 0x3b   // Keyboard F2
@@ -124,7 +139,8 @@
 #define KEY_DELETE     0x4c // Keyboard Delete Forward
 #define KEY_END        0x4d // Keyboard End
 #define KEY_PAGEDOWN   0x4e // Keyboard Page Down
-#define KEY_102ND      0x64 // Keyboard Non-US \ and |
+#define KEY_102ND      0x64 // Keyboard Non-US \ and | italian "<"
+#define KEY_IT_TRIANGLE 0x64
 #define KEY_COMPOSE    0x65 // Keyboard Application
 #define KEY_POWER      0x66 // Keyboard Power
 #define KEY_KPEQUAL    0x67 // Keypad =

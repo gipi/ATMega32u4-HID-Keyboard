@@ -10,23 +10,68 @@
 #include <stdbool.h>
 #include <util/delay.h>
 
+#define pin_output(x,y) DDR##x |= _BV(P##x##y);
+#define pin_high(x,y) PORT##x |= _BV(P##x##y)
+#define pin_low(x,y) PORT##x &= ~_BV(P##x##y)
+
+#define port_output(port) DDR##port = 0xff
+#define port_high(port) PORT##port = 0xff
+
+inline void input_low(uint8_t pin) {
+    PORTD &= ~_BV(pin);
+}
+
+inline void input_high(uint8_t pin) {
+    PORTD |= _BV(pin);
+}
+
+#define SS_high() pin_high(B,0)
+#define SS_low() pin_low(B,0)
+
+#define DDR_SPI DDRB
+#define DD_MOSI PB2
+#define DD_MISO PB3
+#define DD_SCK  PB1
+#define DD_SS   PB0
+
+void SPI_master_init() {
+    /* Set MOSI, SS and SCK output, all others input */
+    DDR_SPI = (1 << DD_MOSI) | (1 << DD_SCK) | (1 << DD_SS);
+    /* Enable SPI, Master, set clock rate fck/16 */
+    SPCR = (1 << SPE) | (1 << MSTR) | (1 << SPR0); // | (1 << DORD);
+}
+
+
+/* while we transmit we also receive */
+uint8_t SPI_masterTransmit(char cData)
+{
+    /* Start transmission */
+    SPDR = cData;
+    /* Wait for transmission complete */
+    while(!(SPSR & (1 << SPIF)))
+        ;
+
+    return SPDR;
+}
+
 int layout_num = 0;
 bool has_unsent_packets = false;
 
 bool state_layer[NUM_ROWS][NUM_COLS] = {
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};  // Key States to do state changes
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};  // Key States to do state changes
 
 void matrix_init() {
-  DDRD = 0xFF;   // Configure the first 7 rows as outputs
-  DDRF = 0xFF;   // Configure the last 5 as outputs
-  PORTF = 0xFF;  // The logic is inverted, being pulled low is a keypress
-  PORTD = 0xFF;
-
-  DDRB &= 0;     // Configure the row port as inputs
-  PORTB = 0xFF;  // Enable the Pull up resistors
+  SPI_master_init();
+  SS_low(); // when low the shift registers are in LOAD mode
+  port_output(D);
+  port_high(D);
 
   TCCR0B |= (1 << CS00) | (1 << CS02); // Set up the 1024 prescaler on timer 0
   TCCR0A = (1 << WGM01); // Set the timer to compare mode
@@ -36,45 +81,23 @@ void matrix_init() {
 
 void do_layer_led() { PORTC = layout_num << 6; }
 
-void configure_columns(unsigned int j) {
-    if (j < 7) {
-        // This is because of the dumb routing on PORTD
-        int DNUM;
-        switch (j) {
-            case (0):
-                DNUM = 0;
-                break;
-            case (1):
-                DNUM = 6;
-                break;
-            case (2):
-                DNUM = 4;
-                break;
-            case (3):
-                DNUM = 5;
-                break;
-            case (4):
-                DNUM = 3;
-                break;
-            case (5):
-                DNUM = 2;
-                break;
-            case (6):
-                DNUM = 1;
-                break;
-        }
-
-        PORTD &= ~(1 << DNUM);  // Set it low to read from the row
-    } else {  // PORTF is not continuous, which means we cannot just loop over it
-        int FNUM = j - 7;
-        if (FNUM > 1) FNUM += 2;  // Bits 2 and 3 do not exist on PORTF
-        PORTF &= ~(1 << FNUM);
-    } /* end logic behind pins selection */
+/*
+ * Set the input pin to low.
+ */
+void enable_input(unsigned int j) {
+    input_low(j);
 }
 
-void do_handle_keypress(unsigned int i, unsigned int j) {
-    if ((bool)(PINB & (1 << (i + B_OFFSET))) != state_layer[i][j]) { // Is the value in the state array different from the value read from the key?
-        if (!(PINB & (1 << (i + B_OFFSET)))) {  // Low to High (Key Down)
+void disable_input(unsigned int j) {
+    input_high(j);
+}
+/*
+ * Use the state of the button and identify the possible situation.
+ */
+void do_handle_keypress(bool state, unsigned int i, unsigned int j) {
+
+    if (state != state_layer[i][j]) { // Is the value in the state array different from the value read from the key?
+        if (!state) {  // Low to High (Key Down)
 
             uint16_t key = layout[layout_num][i][j];
             if (key & KEY_MOD_MACRO) { // Is this a macro key, in which case we have to set the appropriate value in the modifier bit
@@ -119,37 +142,36 @@ void do_handle_keypress(unsigned int i, unsigned int j) {
                 }
             }
         }
-        state_layer[i][j] =
-            (bool)(PINB & (1 << (i + B_OFFSET)));  // Record the changed state in the array to register future state changes
+        state_layer[i][j] = state; // Record the changed state in the array to register future state changes
         has_unsent_packets = true; // Let the timer interrupt know that we've got some packets to be sent
     }
 
 }
 
 /*
- * The matrix scan loops over the PORTB pins for the rows and
- * PORTD and PORTF pins for the columns.
+ * The matrix scan loops over the PORTB pins for the rows and read via SPI the
+ * pins having asserted low signal.
+ *
  */
 void do_matrix_scan() {
+    for (int row = 0; row < NUM_ROWS; row++) {
+            enable_input(row);
 
-    for (int i = 0; i < NUM_ROWS; i++) {
-        //_delay_ms(10);
+            SS_high(); // enable shifting
 
-        /* here we are looping over the columns with PORTD and PORTF and pins */
-        for (unsigned int j = 0; j < NUM_COLS; j++) {
-            //_delay_ms(10);
-            configure_columns(j);
+            uint8_t c0 = SPI_masterTransmit(0x5a);
+            uint8_t c1 = SPI_masterTransmit(0x5a);
 
-            cli(); // Turn off interrupts for this section
+            SS_low(); // re-enable loading
+            disable_input(row);
 
-                do_handle_keypress(i, j);
+            uint16_t c = c0 << 8 | c1;
 
-            sei(); // Re-enable the interrupts
+            for (unsigned int column = 0; column < NUM_COLS; column++) {
+                bool state = (c >> column) & 1;
 
-            PORTF = 0xFF; // Set all the pins high to not generate false keypresses when scanning future columns
-            PORTD = 0xFF; 
-
-        }
+                do_handle_keypress(state, row, column);
+            }
     }
 #if 0
             for (int k = 0; k < 6; k++) {
